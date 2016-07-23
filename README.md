@@ -7,6 +7,7 @@ There are several `tail` packages for Go available. However, most
 packages do not preserve the io.Reader interface, instead opting for
 a line-oriented approach involving `chan string`. By preserving the
 `io.Reader` interface, this package composes better with the standard
-library. In addition, the `tailpipe` package will detect file rotations and
-re-open the underlying file, if possible. File rotation detection is
-currently only provided on unix operating systems.
+library.
+
+File rotation detection is currently only provided on unix operating
+systems.
