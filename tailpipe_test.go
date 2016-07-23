@@ -7,12 +7,12 @@ import (
 	"testing"
 )
 
-func tmpfile(t *testing.T, prefix string) *os.File {
+func tmpfile(t *testing.T, prefix string) (*os.File, func()) {
 	f, err := ioutil.TempFile("", prefix)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return f
+	return f, func() { f.Close(); os.Remove(f.Name()) }
 }
 
 func write(t *testing.T, w io.Writer, data string) {
@@ -34,8 +34,8 @@ func compare(t *testing.T, r io.Reader, want string) {
 }
 
 func TestFile(t *testing.T) {
-	f := tmpfile(t, "tailpipe-go-test")
-	defer f.Close()
+	f, teardown := tmpfile(t, "tailpipe-go-test")
+	defer teardown()
 
 	follow, err := Open(f.Name())
 	if err != nil {
