@@ -112,3 +112,11 @@ func (f *File) Seek(offset int64, whence int) (int64, error) {
 	}
 	return 0, ErrNotSupported
 }
+
+// Close closes the underlying stream
+func (f *File) Close() error {
+	if v, ok := f.r.(io.ReadCloser); ok {
+		return v.Close()
+	}
+	return ErrNotSupported
+}
