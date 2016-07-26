@@ -1,10 +1,7 @@
 // Package tailpipe allows for reading normal files indefinitely.
 // With the tailpipe package, code that uses the standard library's
-// io.Reader interface can be transparently adapted to read receive
-// future updates to normal files. Rather than returning EOF when
-// the end of file is reached, the Read routine in the tailpipe package
-// waits for future updates to the file. This can be useful, for instance,
-// when watching log files for updates.
+// io.Reader interface can be transparently adapted to receive
+// future updates to normal files.
 package tailpipe
 
 import (
@@ -14,6 +11,10 @@ import (
 	"time"
 )
 
+// The Follow function allows for the creation of a File with
+// an underlying stream that may not implement all interfaces
+// which a File implements. Such Files will return ErrNotSupported
+// when this is the case.
 var ErrNotSupported = errors.New("Operation not supported by underlying stream")
 
 // A File represents an open normal file. A File is effectively of
