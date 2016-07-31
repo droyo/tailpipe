@@ -93,9 +93,10 @@ func Follow(r io.Reader) *File {
 // if available. If the underlying stream does not
 // have a name, Name returns an empty string.
 func (f *File) Name() string {
-	if v, ok := f.r.(interface {
+	type named interface {
 		Name() string
-	}); ok {
+	}
+	if v, ok := f.r.(named); ok {
 		return v.Name()
 	}
 	return ""
@@ -105,9 +106,7 @@ func (f *File) Name() string {
 // underlying stream does not provide a Seek method,
 // ErrNotSupported is returned.
 func (f *File) Seek(offset int64, whence int) (int64, error) {
-	if v, ok := f.r.(interface {
-		Seek(int64, int) (int64, error)
-	}); ok {
+	if v, ok := f.r.(io.Seeker); ok {
 		return v.Seek(offset, whence)
 	}
 	return 0, ErrNotSupported
