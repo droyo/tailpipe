@@ -71,6 +71,14 @@ func TestFile(t *testing.T) {
 	go compare(t, follow, "there!")
 	time.Sleep(time.Millisecond / 2)
 	write(t, f, "there!")
+
+	// Test double close
+	follow.Close()
+	follow.Close()
+
+	if _, ok := <-follow.Rotated; ok {
+		t.Errorf("closing %s did not close Rotated channel", f.Name())
+	}
 }
 
 func TestSeeker(t *testing.T) {

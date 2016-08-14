@@ -15,6 +15,11 @@ func ExampleOpen() {
 		log.Fatal(err)
 	}
 	defer tail.Close()
+	go func() {
+		for range tail.Rotated {
+			log.Printf("file %s rotated; following new file", tail.Name())
+		}
+	}()
 	scanner := bufio.NewScanner(tail)
 	for scanner.Scan() {
 		if bytes.Contains(scanner.Bytes(), []byte("ntpd")) {

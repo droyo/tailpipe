@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -25,7 +26,9 @@ var ErrNotSupported = errors.New("Operation not supported by underlying stream")
 // should receive from the Rotated channel.
 type File struct {
 	r       io.Reader
-	Rotated chan struct{}
+	Rotated <-chan struct{}
+	mu      sync.Mutex
+	rc      chan struct{}
 }
 
 // Read reads up to len(p) bytes into p. If end-of-file is reached, Read
@@ -44,7 +47,7 @@ func (f *File) Read(p []byte) (n int, err error) {
 			if file, ok := f.r.(*os.File); ok {
 				if file, ok = newFile(file); ok {
 					select {
-					case f.Rotated <- struct{}{}:
+					case f.rc <- struct{}{}:
 					default:
 					}
 					f.r = file
@@ -111,7 +114,9 @@ func Follow(r io.Reader) *File {
 	// to a previous notification. This is addressed by buffering the
 	// channel, but can still be a problem with files that are rotated
 	// very frequently.
-	return &File{r: r, Rotated: make(chan struct{}, 1)}
+	f := &File{r: r, rc: make(chan struct{}, 1)}
+	f.Rotated = f.rc
+	return f
 }
 
 // Name returns the name of the underlying file, if available. If the
@@ -135,8 +140,16 @@ func (f *File) Seek(offset int64, whence int) (int64, error) {
 	return 0, ErrNotSupported
 }
 
-// Close closes the underlying file or stream.
+// Close closes the underlying file or stream. It also has the
+// side effect of closing the File's Rotated channel. Close
+// is safe to call multiple times.
 func (f *File) Close() error {
+	f.mu.Lock()
+	if f.rc != nil {
+		close(f.rc)
+		f.rc = nil
+	}
+	f.mu.Unlock()
 	if v, ok := f.r.(io.ReadCloser); ok {
 		return v.Close()
 	}
