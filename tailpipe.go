@@ -61,6 +61,41 @@ func (f *File) Read(p []byte) (n int, err error) {
 	return n, err
 }
 
+func newFile(oldfile *os.File) (*os.File, bool) {
+	var isOld bool
+
+	oldstat, err := oldfile.Stat()
+	if err != nil {
+		isOld = true
+	}
+
+	newfile, err := os.Open(oldfile.Name())
+	if err != nil {
+		// NOTE(droyo) time will tell whether this is the right thing
+		// to do. The file could be gone for good, or we could just
+		// be in-between rotations.
+		return nil, false
+	}
+
+	if isOld {
+		oldfile.Close()
+		return newfile, true
+	}
+
+	newstat, err := newfile.Stat()
+	if err != nil {
+		newfile.Close()
+		return nil, false
+	}
+
+	if !os.SameFile(oldstat, newstat) {
+		oldfile.Close()
+		return newfile, true
+	}
+	newfile.Close()
+	return oldfile, false
+}
+
 // Open opens the given file for reading.
 func Open(path string) (*File, error) {
 	f, err := os.Open(path)

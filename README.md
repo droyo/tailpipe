@@ -10,6 +10,3 @@ packages do not preserve the io.Reader interface, instead opting for
 a line-oriented approach involving `chan string`. By preserving the
 `io.Reader` interface, this package composes better with the standard
 library.
-
-File rotation detection is currently only provided on unix operating
-systems.
