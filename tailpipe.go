@@ -34,7 +34,8 @@ type File struct {
 //
 // If the underlying stream is an *os.File, Read will attempt to detect
 // if it has been replaced, such as during log rotation. If so, Read will
-// re-open the file at the original path provided to Open.
+// re-open the file at the original path provided to Open. Re-opening
+// does not occur until the old file is exhausted.
 func (f *File) Read(p []byte) (n int, err error) {
 	for {
 		n, err = f.r.Read(p)
