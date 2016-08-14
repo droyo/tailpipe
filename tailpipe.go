@@ -1,7 +1,7 @@
-// Package tailpipe allows for reading normal files indefinitely.
-// With the tailpipe package, code that uses the standard library's
-// io.Reader interface can be transparently adapted to receive
-// future updates to normal files.
+// Package tailpipe allows for reading normal files indefinitely.  With the
+// tailpipe package, code that uses the standard library's io.Reader
+// interface can be transparently adapted to receive future updates to
+// normal files.
 package tailpipe
 
 import (
@@ -11,32 +11,30 @@ import (
 	"time"
 )
 
-// The Follow function allows for the creation of a File with
-// an underlying stream that may not implement all interfaces
-// which a File implements. Such Files will return ErrNotSupported
-// when this is the case.
+// The Follow function allows for the creation of a File with an underlying
+// stream that may not implement all interfaces which a File implements. Such
+// Files will return ErrNotSupported when this is the case.
 var ErrNotSupported = errors.New("Operation not supported by underlying stream")
 
-// A File represents an open normal file. A File is effectively of
-// infinite length; all reads to the file will block until data are available,
+// A File represents an open normal file. A File is effectively of infinite
+// length; all reads to the file will block until data are available,
 // even if EOF on the underlying file is reached.
 //
 // The tailpipe package will attempt to detect when a file has been
-// rotated. Programs that wish to be notified when such a rotation
-// occurs should receive from the Rotated channel.
+// rotated. Programs that wish to be notified when such a rotation occurs
+// should receive from the Rotated channel.
 type File struct {
 	r       io.Reader
 	Rotated chan struct{}
 }
 
-// Read reads up to len(p) bytes into p. If end-of-file is reached,
-// Read will block until new data are available. Read returns the
-// number of bytes read and any errors other than io.EOF.
+// Read reads up to len(p) bytes into p. If end-of-file is reached, Read
+// will block until new data are available. Read returns the number of
+// bytes read and any errors other than io.EOF.
 //
-// If the underlying stream is an *os.File, Read will attempt to
-// detect if it has been replaced, such as during log rotation. If
-// so, Read will re-open the file at the original path provided to
-// Open.
+// If the underlying stream is an *os.File, Read will attempt to detect
+// if it has been replaced, such as during log rotation. If so, Read will
+// re-open the file at the original path provided to Open.
 func (f *File) Read(p []byte) (n int, err error) {
 	for {
 		n, err = f.r.Read(p)
@@ -71,9 +69,9 @@ func newFile(oldfile *os.File) (*os.File, bool) {
 
 	newfile, err := os.Open(oldfile.Name())
 	if err != nil {
-		// NOTE(droyo) time will tell whether this is the right thing
-		// to do. The file could be gone for good, or we could just
-		// be in-between rotations.
+		// NOTE(droyo) time will tell whether this is the right
+		// thing to do. The file could be gone for good, or we
+		// could just be in-between rotations.
 		return nil, false
 	}
 
@@ -105,28 +103,24 @@ func Open(path string) (*File, error) {
 	return Follow(f), err
 }
 
-// Follow converts an existing io.Reader to a
-// tailpipe.File. This can be useful when opening
-// files with special permissions. In general, the
-// behavior of a tailpipe.File is only suitable for
-// normal files; using Follow on an io.Pipe, net.Conn,
-// or other non-file stream will yield undesirable
-// results.
+// Follow converts an existing io.Reader to a tailpipe.File. This can
+// be useful when opening files with special permissions. In general,
+// the behavior of a tailpipe.File is only suitable for normal files;
+// using Follow on an io.Pipe, net.Conn, or other non-file stream will
+// yield undesirable results.
 func Follow(r io.Reader) *File {
-	// BUG(droyo): a File's Rotated channel should not
-	// be relied upon to provide an accurate count of
-	// file rotations; because the tailpipe will only perform
-	// a non-blocking send on the Rotated channel,
-	// a goroutine may miss a new notification while it
-	// is responding to a previous notification. This is addressed
-	// by buffering the channel, but can still be a problem with
-	// files that are rotaetd very frequently.
+	// BUG(droyo): a File's Rotated channel should not be relied upon to
+	// provide an accurate count of file rotations; because the tailpipe
+	// will only perform a non-blocking send on the Rotated channel,
+	// a goroutine may miss a new notification while it is responding
+	// to a previous notification. This is addressed by buffering the
+	// channel, but can still be a problem with files that are rotated
+	// very frequently.
 	return &File{r: r, Rotated: make(chan struct{}, 1)}
 }
 
-// Name returns the name of the underlying file,
-// if available. If the underlying stream does not
-// have a name, Name returns an empty string.
+// Name returns the name of the underlying file, if available. If the
+// underlying stream does not have a name, Name returns an empty string.
 func (f *File) Name() string {
 	type named interface {
 		Name() string
@@ -137,9 +131,8 @@ func (f *File) Name() string {
 	return ""
 }
 
-// Seek calls Seek on the underlying stream. If the
-// underlying stream does not provide a Seek method,
-// ErrNotSupported is returned.
+// Seek calls Seek on the underlying stream. If the underlying stream does
+// not provide a Seek method, ErrNotSupported is returned.
 func (f *File) Seek(offset int64, whence int) (int64, error) {
 	if v, ok := f.r.(io.Seeker); ok {
 		return v.Seek(offset, whence)
@@ -147,7 +140,7 @@ func (f *File) Seek(offset int64, whence int) (int64, error) {
 	return 0, ErrNotSupported
 }
 
-// Close closes the underlying stream
+// Close closes the underlying file or stream.
 func (f *File) Close() error {
 	if v, ok := f.r.(io.ReadCloser); ok {
 		return v.Close()
